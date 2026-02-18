@@ -9,6 +9,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/P8ace/sampleGoApi/internal/products"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 )
@@ -22,14 +23,21 @@ func (app *application) mount() http.Handler {
 	r.Use(middleware.RequestID) // rate limiting
 	r.Use(middleware.RealIP)    //import for rate limiting and analytics and tracing
 	r.Use(middleware.Logger)
-	r.Use(middleware.Recoverer) //recover from creashes
+	r.Use(middleware.Recoverer) //recover from crashes
 	r.Use(middleware.Timeout(60 * time.Second))
 
 	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("welcome"))
 	})
 
-	// http.ListenAndServe(":3000", r)
+	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte("All good"))
+	})
+
+	productService := products.NewService()
+	productsHandler := products.NewHandler(productService)
+
+	r.Get("/products", productsHandler.ListProducts)
 
 	return r
 }
