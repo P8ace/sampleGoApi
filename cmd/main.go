@@ -4,9 +4,20 @@ import (
 	"context"
 	"log/slog"
 	"os"
+
+	"github.com/P8ace/sampleGoApi/internal/adapters/env"
+	"github.com/jackc/pgx/v5"
 )
 
 func main() {
+	ctx := context.Background()
+
+	cfg := config{
+		addr: ":8080",
+		db: dbConfig{
+			dsn: env.GetString("GOOSE_DBSTRING", "host=localhost user=postgres password=postgres dbname=postgres sslmode=disable"),
+		},
+	}
 
 	//setup structured logging
 	logHandlerOptions := &slog.HandlerOptions{
@@ -15,13 +26,18 @@ func main() {
 	log := slog.New(slog.NewJSONHandler(os.Stdout, logHandlerOptions))
 	slog.SetDefault(log)
 
-	cfg := config{
-		addr: ":8080",
-		db:   dbConfig{},
+	// Database connection
+	conn, err := pgx.Connect(ctx, cfg.db.dsn)
+	if err != nil {
+		slog.Error("Error while connecting to database", "Error", err)
+		os.Exit(1)
 	}
+	defer conn.Close(ctx)
+	slog.Info("Connected to database", "dsn", cfg.db.dsn)
 
 	api := application{
 		config: cfg,
+		db:     conn,
 	}
 
 	handler := api.mount()

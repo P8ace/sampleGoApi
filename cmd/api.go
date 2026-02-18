@@ -9,13 +9,16 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/P8ace/sampleGoApi/internal/adapters/postgres/repo"
 	"github.com/P8ace/sampleGoApi/internal/products"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/jackc/pgx/v5"
 )
 
 type application struct {
 	config config
+	db     *pgx.Conn
 }
 
 func (app *application) mount() http.Handler {
@@ -34,7 +37,7 @@ func (app *application) mount() http.Handler {
 		w.Write([]byte("All good"))
 	})
 
-	productService := products.NewService()
+	productService := products.NewService(repo.New(app.db))
 	productsHandler := products.NewHandler(productService)
 
 	r.Get("/products", productsHandler.ListProducts)
