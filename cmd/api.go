@@ -16,6 +16,14 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
+type dbConfig struct {
+	dsn string
+}
+type config struct {
+	addr string
+	db   dbConfig
+}
+
 type application struct {
 	config config
 	db     *pgx.Conn
@@ -30,17 +38,18 @@ func (app *application) mount() http.Handler {
 	r.Use(middleware.Timeout(60 * time.Second))
 
 	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("welcome"))
+		w.Write([]byte("welcome\n"))
 	})
 
 	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("All good"))
+		w.Write([]byte("All good\n"))
 	})
 
 	productService := products.NewService(repo.New(app.db))
 	productsHandler := products.NewHandler(productService)
 
 	r.Get("/products", productsHandler.ListProducts)
+	r.Get("/products/{id}", productsHandler.FindProductById)
 
 	return r
 }
@@ -55,14 +64,6 @@ func (app *application) getServer(h http.Handler) *http.Server {
 	}
 
 	return srv
-}
-
-type dbConfig struct {
-	dsn string
-}
-type config struct {
-	addr string
-	db   dbConfig
 }
 
 // function to handle graceful shutdowns
