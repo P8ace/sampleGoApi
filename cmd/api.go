@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/P8ace/sampleGoApi/internal/adapters/postgres/repo"
+	"github.com/P8ace/sampleGoApi/internal/orders"
 	"github.com/P8ace/sampleGoApi/internal/products"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -50,6 +51,10 @@ func (app *application) mount() http.Handler {
 
 	r.Get("/products", productsHandler.ListProducts)
 	r.Get("/products/{id}", productsHandler.FindProductById)
+
+	orderService := orders.NewOrderService(repo.New(app.db), app.db)
+	ordersHandler := orders.NewHandler(orderService)
+	r.Post("/orders", ordersHandler.PlaceOrder)
 
 	return r
 }
